@@ -13,39 +13,63 @@ uniform float uTime;
 // ref: https://www.shadertoy.com/view/stdXWH
 // ref: https://www.shadertoy.com/view/dsjGDD
 
+struct GridResult {
+	vec3 grid;
+	float b;
+	float size;
+};
+
 const float GRID_INTERVAL = 0.25;
 
-vec4 traverseGrid3D( vec3 ro, vec3 rd ) {
+GridResult traverseGrid3D( vec3 ro, vec3 rd ) {
 
-    vec3 grid = floor( ( ro + rd * 0.001 * GRID_INTERVAL ) / GRID_INTERVAL ) * GRID_INTERVAL + 0.5 * GRID_INTERVAL;
-    
-    vec3 src = ( ro - grid ) / rd;
-    vec3 dst = abs( 0.5 * GRID_INTERVAL / rd );
-    vec3 bv = -src + dst;
-    float b = min( min( bv.x, bv.y ), bv.z );
-    
-    return vec4( grid, b );
+	GridResult result;
+	
+	for( int i = 0; i < 8; i ++ ) {
+	
+		float gridSize = GRID_INTERVAL * pow( 0.5, float( i ) ) ; 
+
+	    result.grid = floor( ( ro + rd * 0.0001 * gridSize ) / gridSize ) * gridSize + 0.5 * gridSize;
+
+		vec3 src = ( ro - result.grid ) / rd;
+		vec3 dst = abs( 0.5 * gridSize / rd );
+		vec3 bv = -src + dst;
+		
+		result.b = min( min( bv.x, bv.y ), bv.z );
+		result.size = gridSize;
+		
+		float n = fbm( result.grid * 10.0 + float(i) + uTime * 0.1);
+
+		if( n < 0.5 ) {
+
+			break;
+
+		}
+
+	}
+	
+    return result;
 }
 
-vec2 D( vec3 p ) {
+vec2 D( vec3 p, GridResult gridResult) {
 
 	vec2 d = vec2( 0.0 );
 
-	vec3 s = vec3( GRID_INTERVAL / 2.0 * 0.9 );
+	vec3 s = vec3( gridResult.size / 2.0 * 0.6 );
 
-	d = vec2( sdBox( p, s ), 0.0 );
+	d = vec2( sdRoundBox( p, s, 0.005 ), 0.0 );
 	
 	return d;
 
 }
 
 
-vec3 N( vec3 pos, float delta ){
+vec3 N( vec3 pos, GridResult gridResult, float delta ){
 
     return normalize( vec3(
-		D( pos ).x - D( vec3( pos.x - delta, pos.y, pos.z ) ).x,
-		D( pos ).x - D( vec3( pos.x, pos.y - delta, pos.z ) ).x,
-		D( pos ).x - D( vec3( pos.x, pos.y, pos.z - delta ) ).x
+		D( pos, gridResult ).x - D( vec3( pos.x - delta, pos.y, pos.z ), gridResult ).x,
+		D( pos, gridResult ).x - D( vec3( pos.x, pos.y - delta, pos.z ), gridResult ).x,
+		D( pos, gridResult ).x - D( vec3( pos.x, pos.y, pos.z - delta ), gridResult ).x
 	) );
 	
 }
@@ -67,6 +91,7 @@ void main( void ) {
 	bool hit = false;
 
 	vec3 normal;
+	GridResult gridResult;
 	
 	for( int i = 0; i < 64; i++ ) { 
 
@@ -74,19 +99,19 @@ void main( void ) {
 
 			rayLength = lenNextGrid;
 			rayPos = rayOrigin + rayLength * rayDir;
-			vec4 grid = traverseGrid3D( rayPos, rayDir );
-			gridCenter.xyz = grid.xyz;
+			gridResult = traverseGrid3D( rayPos, rayDir );
+			gridCenter.xyz = gridResult.grid;
 
 			float lg = length(gridCenter.xyz);
-			lenNextGrid += grid.w;
+			lenNextGrid += gridResult.b;
 
 		}
 
-		dist = D( rayPos - gridCenter );
+		dist = D( rayPos - gridCenter, gridResult );
 		rayLength += dist.x;
 		rayPos = rayOrigin + rayLength * rayDir;
 
-		if( dist.x < 0.001 ) {
+		if( dist.x < 0.0001 ) {
 			hit = true;
 			break;
 		}
@@ -99,7 +124,7 @@ void main( void ) {
 
 	if( hit ) {
 
-		vec3 n = N( rayPos - gridCenter, 0.001 );
+		vec3 n = N( rayPos - gridCenter, gridResult, 0.001 );
 		outNormal = normalize(modelMatrix * vec4( n, 0.0 )).xyz;
 		
 	} else {
@@ -108,9 +133,9 @@ void main( void ) {
 		
 	}
 
-	outRoughness = .1;
-	outMetalic = 0.0;
-	// outColor.xyz = vec3( 0.0 );
+	outRoughness = 0.1 + fbm( rayPos * 20.0 );
+	outMetalic = 0.9;
+	outColor.xyz = vec3( 1.0 );
 
 	outPos = ( modelMatrix * vec4( rayPos, 1.0 ) ).xyz;
 

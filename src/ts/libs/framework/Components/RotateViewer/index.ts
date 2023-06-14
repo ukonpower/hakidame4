@@ -17,7 +17,7 @@ export class RotateViewer extends Component {
 
 		this.target = new GLP.Vector( 0, 0, 0, 0 );
 		this.rotBasePos = new GLP.Vector( 0, 0, 0 );
-		this.rotSpeed = 1.0;
+		this.rotSpeed = 0.3;
 
 		this.quaternion = new GLP.Quaternion();
 		this.matrix = new GLP.Matrix();

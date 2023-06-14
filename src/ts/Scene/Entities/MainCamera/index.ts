@@ -105,7 +105,7 @@ export class MainCamera extends Entity {
 		const lookAt = this.addComponent( 'lookAt', new LookAt() );
 
 		this.addComponent( 'shakeViewer', new ShakeViewer() );
-		this.addComponent( 'rotateViewer', new RotateViewer() );
+		// this.addComponent( 'rotateViewer', new RotateViewer() );
 
 		// resolution
 
@@ -470,10 +470,11 @@ export class MainCamera extends Entity {
 		const fov = this.cameraComponent.fov;
 		const focusDistance = this.tmpVector1.sub( this.tmpVector2 ).length();
 		const kFilmHeight = 0.036;
+		const flocalLength = 0.5 * kFilmHeight / Math.tan( 0.5 * ( fov / 180 * Math.PI ) );
 		const maxCoc = 1 / this.rtDofBokeh.size.y * 6.0;
 		const rcpMaxCoC = 1.0 / maxCoc;
-		const flocalLength = 0.5 * kFilmHeight / Math.tan( 0.5 * ( fov / 180 * Math.PI ) );
 		const coeff = flocalLength * flocalLength / ( 0.3 * ( focusDistance - flocalLength ) * kFilmHeight * 2 );
+
 		this.dofParams.set( focusDistance, maxCoc, rcpMaxCoC, coeff );
 
 		// light shaft swap
@@ -543,7 +544,7 @@ export class MainCamera extends Entity {
 		this.cameraComponent.near = 0.1;
 		this.cameraComponent.far = 1000;
 		this.cameraComponent.aspect = resolution.x / resolution.y;
-		this.cameraComponent.fov = this.baseFov + Math.max( 0, 1 / this.cameraComponent.aspect - 1 ) * 10.0;
+		this.cameraComponent.fov = this.baseFov + Math.max( 0, 1 / this.cameraComponent.aspect - 1 ) * 20.0;
 		this.cameraComponent.updateProjectionMatrix();
 
 	}
