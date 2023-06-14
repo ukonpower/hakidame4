@@ -17,7 +17,7 @@ export class TurnTable extends Component {
 
 		const entity = event.entity;
 
-		this.rotQuaternion.setFromEuler( new GLP.Euler( 0, - 0.1 * event.deltaTime, 0 ) );
+		this.rotQuaternion.setFromEuler( new GLP.Euler( 0, - 0.2 * event.deltaTime, 0 ) );
 
 		entity.quaternion.multiply( this.rotQuaternion );
 

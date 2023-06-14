@@ -17,6 +17,7 @@ struct GridResult {
 	vec3 grid;
 	float b;
 	float size;
+	float noise;
 };
 
 const float GRID_INTERVAL = 0.25;
@@ -25,11 +26,11 @@ GridResult traverseGrid3D( vec3 ro, vec3 rd ) {
 
 	GridResult result;
 	
-	for( int i = 0; i < 8; i ++ ) {
+	for( int i = 0; i < 4; i ++ ) {
 	
 		float gridSize = GRID_INTERVAL * pow( 0.5, float( i ) ) ; 
 
-	    result.grid = floor( ( ro + rd * 0.0001 * gridSize ) / gridSize ) * gridSize + 0.5 * gridSize;
+	    result.grid = floor( ( ro + rd * 0.01 * gridSize ) / gridSize ) * gridSize + 0.5 * gridSize;
 
 		vec3 src = ( ro - result.grid ) / rd;
 		vec3 dst = abs( 0.5 * gridSize / rd );
@@ -37,8 +38,9 @@ GridResult traverseGrid3D( vec3 ro, vec3 rd ) {
 		
 		result.b = min( min( bv.x, bv.y ), bv.z );
 		result.size = gridSize;
+		result.noise = noise( result.grid * 100.0 );
 		
-		float n = fbm( result.grid * 10.0 + float(i) + uTime * 0.1);
+		float n = noise( result.grid * 8.0 + float(i) * 9.0 + uTime * 0.1);
 
 		if( n < 0.5 ) {
 
@@ -57,7 +59,7 @@ vec2 D( vec3 p, GridResult gridResult) {
 
 	vec3 s = vec3( gridResult.size / 2.0 * 0.6 );
 
-	d = vec2( sdRoundBox( p, s, 0.005 ), 0.0 );
+	d = vec2( sdRoundBox( p, s, 0.2 * s.x ), 0.0 );
 	
 	return d;
 
@@ -126,6 +128,11 @@ void main( void ) {
 
 		vec3 n = N( rayPos - gridCenter, gridResult, 0.001 );
 		outNormal = normalize(modelMatrix * vec4( n, 0.0 )).xyz;
+		outColor = vec4( 0.05 );
+		outColor += smoothstep( 0.3, 0.7,  noise( gridResult.grid * 100.0 ) ) ;
+
+		// outColor.xyz = vec3( n );
+
 		
 	} else {
 
@@ -133,9 +140,9 @@ void main( void ) {
 		
 	}
 
-	outRoughness = 0.1 + fbm( rayPos * 20.0 );
-	outMetalic = 0.9;
-	outColor.xyz = vec3( 1.0 );
+	outRoughness = 0.0 + fbm( rayPos * 20.0 );
+	outMetalic = 0.0;
+
 
 	outPos = ( modelMatrix * vec4( rayPos, 1.0 ) ).xyz;
 
